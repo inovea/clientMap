@@ -15,12 +15,11 @@
   // Containers tab
   var conteneurs = [{'id' : 1234, 'address': 'Palais Royal Paris', 'state' : true, 'isSelected' : false}, {'id' : 1235, 'address': 'Grenelle Paris', 'state' : true, 'isSelected' : false},{'id' : 1236, 'address': 'Le marais Paris', 'state' : false, 'isSelected' : false}, {'id' : 1237, 'address': 'Val-de-grace Paris', 'state' : true, 'isSelected' : false  }];
 
+  //Containers of the new errand list
   var errandContainers = [];
+
   // Markers tab
   var markers = new Array();
-
-
-  var myPosition;
 
   // Funciton to initialize the map
   function initialize() {
@@ -35,22 +34,11 @@
 
      map.setMapTypeId(google.maps.MapTypeId.HYBRID);
 
-    geolocation();
-
     for (conteneur in conteneurs){
          placeMarker(conteneurs[conteneur]);
     }
 
   }
-
-  function handleNoGeolocation(errorFlag) {
-    if (errorFlag) {
-      var content = 'Error: The Geolocation service failed.';
-    } else {
-      var conteneurst = 'Error: Your browser doesn\'t support geolocation.';
-    }
-
-  };
 
 
 
@@ -65,11 +53,6 @@
     if(container.state == false)
       image.url = 'full_container_marker.png'
 
-
-
-
-
-
         geocoder.geocode( { 'address': container.address}, function(results, status) {
           if (status == google.maps.GeocoderStatus.OK) {
               
@@ -80,8 +63,11 @@
                   icon : image
               } );  
              newMarker.info = new google.maps.InfoWindow({
-                content: results[0].formatted_address
+              content : ""
               });
+
+
+              newMarker.info.content += "Conteneur n&deg;"+ container.id+ "<br>"+results[0].formatted_address;
 
              if(container.state == true)
                 newMarker.info.content += "</br><span style=\" color : green\">Disponible</span>";
@@ -116,7 +102,6 @@
 
   geocoder.geocode( { 'address': address}, function(results, status) {
               if (status == google.maps.GeocoderStatus.OK) {
-                  
                   map.setCenter(results[0].geometry.location);
               } else {
                   alert("L'adresse saisie est introuvable.");
@@ -125,45 +110,6 @@
 
    };
 
-
-
-  function geolocation(){
-
-   // Try HTML5 geolocation
-    if(navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        var pos = new google.maps.LatLng(position.coords.latitude,
-                                         position.coords.longitude);
-
-        geocoder.geocode( { 'latLng': pos}, function(results, status) {
-          if (status == google.maps.GeocoderStatus.OK) {
-            myPosition = results[0].formatted_address;
-          }
-        });
-
-
-        var infowindow = new google.maps.InfoWindow({
-          map: map,
-          position: pos,
-          content: 'Vous etes ici'
-        });
-
-
-        /*
-          Center map on the user position
-        */
-        //map.setCenter(pos);
-
-
-      }, function() {
-        handleNoGeolocation(true);
-      });
-
-    } else {
-      // Browser doesn't support Geolocation
-      handleNoGeolocation(false);
-    }
-  }
 
   var addToErrand = function(containerId){
 
