@@ -92,7 +92,7 @@
               if(container.isSelected == false)
                 newMarker.info.content += "</br> <button id=\"container"+container.id+"\" onclick=\"addToErrand("+container.id+")\">Ajouter a la course</button>"
               else
-                newMarker.info.content += "</br> <button onclick=\"addToErrand("+container.id+")\" disabled>Ajouter a la course</button>"
+                newMarker.info.content += "</br> <button onclick=\"addToErrand("+container.id+")\" disabled>Ajout&eacute;</button>"
 
 
 
@@ -137,8 +137,6 @@
 
         geocoder.geocode( { 'latLng': pos}, function(results, status) {
           if (status == google.maps.GeocoderStatus.OK) {
-
-
             myPosition = results[0].formatted_address;
           }
         });
@@ -150,7 +148,13 @@
           content: 'Vous etes ici'
         });
 
-        map.setCenter(pos);
+
+        /*
+          Center map on the user position
+        */
+        //map.setCenter(pos);
+
+
       }, function() {
         handleNoGeolocation(true);
       });
@@ -169,19 +173,19 @@
         console.log(JSON.stringify(conteneurs[i]));
         errandContainers.push(conteneurs[i]);
         conteneurs[i].isSelected = true;
-        var element = document.getElementById('container'+conteneurs[i].id);
-        element.setAttribute("disabled","disabled");
-        element.innerHTML = "Ajout&eacute;";
+        console.log('container at index '+i+ ' isSelected -> true');
+        conteneurs[i].isSelected = true;
         i = conteneurs.length;
       }
   }
       
-      displayErrand(errandContainers);
+      displayErrand();
+      initialize();
   };
 
 
 
-  var displayErrand = function(errandContainers){
+  var displayErrand = function(){
 
       document.getElementById('table').innerHTML = "";
 
@@ -191,7 +195,12 @@
       for (var i = 0, tr, td; i < errandContainers.length; i++) {
           tr = document.createElement('tr');
           td = document.createElement('td');
+          img = document.createElement('img');
+          img.setAttribute("src", "trash.png");
+          img.setAttribute("class", "trash-icon");
+          img.setAttribute("onclick", "removeContainerAtIndex("+i+")");
           td.appendChild(document.createTextNode(errandContainers[i].address));
+          td.appendChild(img);
           tr.appendChild(td);
           theTable.appendChild(tr);
           console.log(JSON.stringify(errandContainers[i].address));
@@ -200,6 +209,26 @@
       document.getElementById('table').appendChild(theTable);
       
   }
+
+
+var removeContainerAtIndex = function(index){
+
+  var containerId = errandContainers[index].id;
+errandContainers.splice(index, 1);
+
+  for (var i = 0; i < conteneurs.length; i++) {
+      if(conteneurs[i].id == containerId){
+        conteneurs[i].isSelected = false;
+      }
+  }
+  displayErrand();
+  initialize();
+
+}
+
+
+
+
   //function to create an itinerary
   function createItinerary(targetPlace){
 
