@@ -1,4 +1,4 @@
-/*****************************  Variables declaration  ****************************************/
+    /*****************************  Variables declaration  ****************************************/
 
 //Map object
 var map;
@@ -18,6 +18,16 @@ var markers = new Array();
 
 // All containers array
 var containers = [];
+
+//Errand optimized or not
+var isOptimized = false;
+
+// Save the total distance of no optimized errand to calculate the difference with the optimised one
+var totalDistanceNoOptimized;
+
+// Save the total distance of no optimized errand to calculate the difference with the optimised one
+var totalDurationNoOptimized;
+
 
 /******************************  End of variables declaration  ******************************/
 
@@ -76,6 +86,7 @@ function initialize() {
         placeMarker(containers[container]);
     }
 
+    createItinerary();
 }
 
 
@@ -158,7 +169,6 @@ var addToErrand = function (containerId) {
 
     for (var i = 0; i < containers.length; i++) {
         if (containers[i].id == containerId) {
-            console.log(JSON.stringify(containers[i]));
             errandContainers.push(containers[i]);
             containers[i].isSelected = true;
             i = containers.length;
@@ -181,16 +191,21 @@ var displayErrand = function () {
 
     for (var i = 0, tr, td; i < errandContainers.length; i++) {
         tr = document.createElement('tr');
-        td = document.createElement('td');
+        td1 = document.createElement('td');
+        td2 = document.createElement('td');
+
         img = document.createElement('img');
         img.setAttribute("src", "trash.png");
         img.setAttribute("class", "trash-icon");
         img.setAttribute("onclick", "removeContainerAtIndex(" + i + ")");
-        td.appendChild(document.createTextNode(errandContainers[i].address));
-        td.appendChild(img);
-        tr.appendChild(td);
+        td1.appendChild(document.createTextNode(errandContainers[i].address));
+        td1.setAttribute("style", "width:90%; color:white");
+        td2.appendChild(img);
+        tr.setAttribute("style", "width:100%");
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+
         theTable.appendChild(tr);
-        console.log(JSON.stringify(errandContainers[i].address));
     }
     document.getElementById('table').appendChild(theTable);
 }
@@ -217,30 +232,136 @@ var removeContainerAtIndex = function (index) {
 
 
 /*
-    Function to create an itinerary
+    Function to create an itinerary with multiple places
 */
-function createItinerary(targetPlace) {
-
-    geolocation();
+function createItinerary(isOptimized) {
 
     directionsDisplay.setMap(null);
     directionsDisplay.setMap(map);
     directionsDisplay.setOptions({suppressMarkers: true});
 
 
-    var itineraire = {
-        origin: myPosition,
-        destination: targetPlace,
-        travelMode: google.maps.TravelMode.DRIVING,
-        provideRouteAlternatives: true
-    };
+    //Array of all waypoints of the itinerary, between the start place and the end place
+    var waypoints = [];
 
-    directionsService.route(itineraire, function (response, status) {
-        if (status == google.maps.DirectionsStatus.OK) {
-            directionsDisplay.setDirections(response);
+    if(errandContainers.length>1){
+
+        var startPlace = errandContainers[0].address;
+        var endPlace = errandContainers[errandContainers.length-1].address;
+
+        if(errandContainers.length > 2){
+            for(var i = 1; i<errandContainers.length-1; i++)
+            {   
+                waypoints.push({location : errandContainers[i].address, stopover : true});
+            }
         }
-    });
 
+
+
+
+            // LOG !! 
+            for(var i = 0; i<waypoints.length; i++)
+                console.log(waypoints[i].location);
+
+
+
+                var itinerary = {
+                    origin: startPlace,
+                    destination: endPlace,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    provideRouteAlternatives: true,
+                    waypoints : waypoints,
+                    optimizeWaypoints: false
+                };
+
+
+                if(isOptimized){
+                    itinerary.optimizeWaypoints = true;
+                }
+
+                directionsService.route(itinerary, function (response, status) {
+                    if (status == google.maps.DirectionsStatus.OK) {
+
+
+                        var array = response.routes[0].legs;
+                        var totalDistance = 0;
+                        var totalDuration = 0;
+
+                        for(var i = 0; i<array.length; i++){
+                            totalDistance += array[i].distance.value;
+                            totalDuration += array[i].duration.value;
+                            console.log( 'legs[', i, '] = ', array[i]);
+                        }
+
+                        console.log(totalDuration);
+                        totalDistance/=1000;
+
+                        totalDistance = Math.floor(totalDistance*10) / 10;
+                        var hours = Math.floor(totalDuration/3600);
+                        var minutes = Math.floor((totalDuration % 3600) /60);
+
+
+                        document.getElementById('errandDistance').innerHTML = ""
+                        document.getElementById('errandDistance').appendChild(document.createTextNode("Distance : " + totalDistance + " km"));
+
+                        document.getElementById('errandHours').innerHTML = "";
+                        document.getElementById('errandHours').appendChild(document.createTextNode("Duree : " + hours + " h "));
+
+                        document.getElementById('errandMinutes').innerHTML = "";
+                        document.getElementById('errandMinutes').appendChild(document.createTextNode(minutes));
+
+
+                        if(!isOptimized){
+
+                            document.getElementById('errandDistanceDifference').innerHTML="";
+                            document.getElementById('errandHoursDifference').innerHTML="";
+                            document.getElementById('errandMinutesDifference').innerHTML="";
+                            totalDurationNoOptimized = totalDuration;
+                            totalDistanceNoOptimized = totalDistance;
+                        }
+
+                        else{
+                            var distanceDifference = Math.floor((totalDistanceNoOptimized-totalDistance)*10) / 10;
+                            var hoursDifference = Math.floor((totalDurationNoOptimized-totalDuration)/3600);
+                            var minutesDifference = Math.floor(((totalDurationNoOptimized-totalDuration) % 3600) /60);
+
+
+
+                            if(distanceDifference > 0 || hoursDifference > 0 || minutesDifference > 0){
+
+                                 document.getElementById('errandDistanceDifference').setAttribute('style', 'color:green');
+                            document.getElementById('errandDistanceDifference').appendChild(document.createTextNode(" -" + distanceDifference + " km"));
+
+                            document.getElementById('errandHoursDifference').setAttribute('style', 'color:green');
+                            document.getElementById('errandHoursDifference').appendChild(document.createTextNode(" -")); 
+
+                            if(hoursDifference > 0){
+                                document.getElementById('errandHoursDifference').appendChild(document.createTextNode(hoursDifference + " h ")); 
+                            }
+                           
+
+                            document.getElementById('errandMinutesDifference').setAttribute('style', 'color:green');
+                            document.getElementById('errandMinutesDifference').appendChild(document.createTextNode(minutesDifference + " min"));
+
+                            }
+                           
+                        }
+
+                        directionsDisplay.setDirections(response);
+                    }
+                });
+    }
+
+    else
+        console.log('no itinerary !');
+
+}
+
+
+function optimizeItinerary(){
+
+    var checkbox = document.getElementById('optimizeCheckbox');
+    createItinerary(checkbox.checked);  
 }
 
 /*****************************  End of functions declaration *****************************/

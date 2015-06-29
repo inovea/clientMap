@@ -1,3 +1,28 @@
+@font-face {
+    font-family: myFont;
+    src: url(Philosopher-Regular.ttf);
+}
+
+body{
+	font-family : myFont;
+}
+
 .trash-icon{
-	width : 10%;
+	width : 70%;
+}
+
+.containersList{
+	height:100%; 
+	text-align:center; 
+	vertical-align:top;
+	color:white;
+	background-color: #1B4422;
+}
+
+.containersListContent{
+	height:85%;
+}
+
+.createButton{
+	padding-top:5%;
 }

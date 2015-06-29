@@ -30,14 +30,27 @@
         <td style="width:75%">
             <div id="map_canvas" style="width:100%; height:100%"></div>
         </td>
-        <td style="height:100%; text-align:center; vertical-align:top">
-            <div>
+        <td class="containersList"  >
+            <div class="containersListContent">
                 <h1>Liste de conteneurs</h1>
                 <br><br>
+                <div id="table"></div>
+            </div>
+            <div>
+                <div><span id="errandDistance"></span><span id="errandDistanceDifference"></span></div>
+                <div><span id="errandHours"></span><span id="errandMinutes"></span> <span id="errandHoursDifference"></span><span id="errandMinutesDifference"></span></div>
 
-                <div id="table">
+                <div><INPUT id="optimizeCheckbox" onclick="optimizeItinerary()" type="checkbox" name="choix1" value="1"> Optimiser</div><br>
+                <span>Attribuer la course &agrave;</span>
+                <select>
+                    <option>Jean</option>
+                    <option>Robert</option>
+                    <option>Maxime</option>
+                    <option>Julien</option>
 
-                </div>
+                </select> 
+                <div class="createButton"></div>
+                <button>Cr&eacute;er la course</button>
             </div>
         </td>
     </tr>
