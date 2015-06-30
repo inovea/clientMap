@@ -27,8 +27,8 @@ var totalDistanceNoOptimized;
 
 // Save the total distance of no optimized errand to calculate the difference with the optimised one
 var totalDurationNoOptimized;
-
-
+ 
+ var dataResult;
 /******************************  End of variables declaration  ******************************/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,27 +38,89 @@ var totalDurationNoOptimized;
 /*
     Containers' mock datas
 */
-var containers = [{
-    'id': 1234,
+/*
+containers = [{
+    'idContainer': 1234,
+    'name' : 'container 1',
     'address': 'Palais Royal Paris',
-    'state': true,
-    'isSelected': false
+    'lat' : 48.858859,
+    'lng' : 2.347000,
+    'state': 1,
+    'lastCollect' : '2015-06-30 10:30:00',
+    'Errand_idErrand' : 1
 }, {
-    'id': 1235,
+    'idContainer': 1235,
+    'name' : 'container 2',
     'address': 'Grenelle Paris',
-    'state': true,
-    'isSelected': false
+    'lat' : 48.858859,
+    'lng' : 2.347000,
+    'state': 1,
+    'lastCollect' : '2015-06-29 09:30:00',
+    'Errand_idErrand' : 1
 }, {
-    'id': 1236,
+    'idContainer': 1236,
+    'name' : 'container 3',
     'address': 'Le marais Paris',
-    'state': false,
-    'isSelected': false
+    'lat' : 48.858859,
+    'lng' : 2.347000,
+    'state': 0,
+    'lastCollect' : '2015-06-28 08:30:00',
+    'Errand_idErrand' : 1
 }, {
-    'id': 1237,
+    'idContainer': 1237,
+    'name' : 'container 4',
     'address': 'Val-de-grace Paris',
-    'state': true,
-    'isSelected': false
+    'lat' : 48.858859,
+    'lng' : 2.347000,
+    'state': 0,
+    'lastCollect' : '2015-06-27 07:30:00',
+    'Errand_idErrand' : 2
 }];
+*/
+
+   
+function initializeContainers(url) {
+  //   var invocation = new XMLHttpRequest();
+
+  // if(invocation) {    
+  //   invocation.open('GET', url, true);
+  //   invocation.onreadystatechange = function() {
+  //           console.log(invocation.responseText);
+  //   }
+
+  //   invocation.send(); 
+  // }
+
+  function success_callback(data){
+
+        var result =  JSON.parse(data.split("<!--")[0]);
+        containers = result['container'];
+        console.log("array : ", JSON.stringify(containers));
+
+        initializeContainersSelection();
+        initializeMap();
+
+
+}
+
+function error_callback(){
+    alert('pas ok');
+}
+
+
+  jQuery.ajax({
+        type: "GET",
+        url: "http://inovea.herobo.com/webhost/container.php?tag=getAll",
+        dataType:"text",
+        success: success_callback,
+        error: error_callback
+    });
+}
+
+
+initializeContainers();
+
+
 
 /******************************  End of Mock datas  ******************************/
 
@@ -67,20 +129,31 @@ var containers = [{
 /*****************************  Functions declaration *****************************/
 
 
+
+/*
+    Function to intialize container with state 'unselected'
+*/
+
+function initializeContainersSelection(){
+
+    for(var i=0; i<containers.length; i++){
+        containers[i].isSelected = false;
+    }
+}
 /* 
  Function to create and initialize the map
  */
-function initialize() {
+function initializeMap() {
 
     var mapOptions = {
         zoom: 13,
-        center: new google.maps.LatLng(48.858859, 2.3470599)
+        center: new google.maps.LatLng(48.858859, 2.3470599),
+        mapTypeId: google.maps.MapTypeId.ROADMAP
     };
 
     map = new google.maps.Map(document.getElementById('map_canvas'),
         mapOptions);
 
-    map.setMapTypeId(google.maps.MapTypeId.HYBRID);
 
     for (container in containers) {
         placeMarker(containers[container]);
@@ -99,8 +172,13 @@ var placeMarker = function (container) {
         url: 'empty_container_marker.png'
     };
 
-    if (container.state == false)
-        image.url = 'full_container_marker.png'
+    if (container.state == false){
+        if(container.Errand_idErrand != 1)
+             image.url = 'busy_full_container_marker2.png'
+         else  
+            image.url = 'full_container_marker.png'
+    }
+       
 
     geocoder.geocode({'address': container.address}, function (results, status) {
         if (status == google.maps.GeocoderStatus.OK) {
@@ -116,18 +194,23 @@ var placeMarker = function (container) {
             });
 
 
-            newMarker.info.content += "container n&deg;" + container.id + "<br>" + results[0].formatted_address;
+            newMarker.info.content += "container n&deg;" + container.idContainer + "<br>" + results[0].formatted_address;
 
-            if (container.state == true)
-                newMarker.info.content += "</br><span style=\" color : green\">Disponible</span>";
-            else if (container.state == false)
-                newMarker.info.content += "</br><span style=\" color : red\">Indisponible</span>";
+            if(container.Errand_idErrand != 1)
+                newMarker.info.content += "</br><span style=\" color : blue\">Appartient a une course</span>";
+            else if (container.state == true)
+                newMarker.info.content += "</br><span style=\" color : green\">Vide</span>";
+            else if (container.state == false){
+                newMarker.info.content += "</br><span style=\" color : red\">Plein</span>";
+            }
+                
 
-
-            if (container.isSelected == false)
-                newMarker.info.content += "</br> <button id=\"container" + container.id + "\" onclick=\"addToErrand(" + container.id + ")\">Ajouter a la course</button>"
+            if(container.Errand_idErrand != 1)
+                newMarker.info.content += "</br> <button disabled>Indisponible</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
+            else if (container.isSelected == false)
+                newMarker.info.content += "</br> <button id=\"container" + container.idContainer + "\" onclick=\"addToErrand(" + container.idContainer + ")\">Ajouter a la course</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
             else
-                newMarker.info.content += "</br> <button onclick=\"addToErrand(" + container.id + ")\" disabled>Ajout&eacute;</button>"
+                newMarker.info.content += "</br> <button disabled>Ajout&eacute;</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
 
 
             google.maps.event.addListener(newMarker, 'click', function () {
@@ -142,7 +225,7 @@ var placeMarker = function (container) {
 
 
 };
-
+ 
 
 /* 
     Function to search a place on the map
@@ -168,7 +251,7 @@ function majSearch() {
 var addToErrand = function (containerId) {
 
     for (var i = 0; i < containers.length; i++) {
-        if (containers[i].id == containerId) {
+        if (containers[i].idContainer == containerId) {
             errandContainers.push(containers[i]);
             containers[i].isSelected = true;
             i = containers.length;
@@ -176,7 +259,7 @@ var addToErrand = function (containerId) {
     }
 
     displayErrand();
-    initialize();
+    initializeMap();
 };
 
 
@@ -216,17 +299,17 @@ var displayErrand = function () {
 */
 var removeContainerAtIndex = function (index) {
 
-    var containerId = errandContainers[index].id;
+    var containerId = errandContainers[index].idContainer;
 
     errandContainers.splice(index, 1);
 
     for (var i = 0; i < containers.length; i++) {
-        if (containers[i].id == containerId) {
+        if (containers[i].idContainer == containerId) {
             containers[i].isSelected = false;
         }
     }
     displayErrand();
-    initialize();
+    initializeMap();
 
 }
 
@@ -255,14 +338,6 @@ function createItinerary(isOptimized) {
                 waypoints.push({location : errandContainers[i].address, stopover : true});
             }
         }
-
-
-
-
-            // LOG !! 
-            for(var i = 0; i<waypoints.length; i++)
-                console.log(waypoints[i].location);
-
 
 
                 var itinerary = {
@@ -369,6 +444,6 @@ function optimizeItinerary(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
-    Map initilization 
+    Initilization 
 */
-google.maps.event.addDomListener(window, 'load', initialize);
+
