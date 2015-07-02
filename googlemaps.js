@@ -1,4 +1,4 @@
-    /*****************************  Variables declaration  ****************************************/
+/*****************************  Variables declaration  ****************************************/
 
 //Map object
 var map;
@@ -6,7 +6,7 @@ var map;
 //To translate String adresse in Google Format adress with position (ex : 61.1648, 4.58058)
 var geocoder = new google.maps.Geocoder();
 
-//To create itineraries
+//Services to create itineraries
 var directionsService = new google.maps.DirectionsService();
 var directionsDisplay = new google.maps.DirectionsRenderer();
 
@@ -19,6 +19,9 @@ var markers = new Array();
 // All containers array
 var containers = [];
 
+//All couriers array
+var couriers = [];
+
 //Errand optimized or not
 var isOptimized = false;
 
@@ -27,8 +30,8 @@ var totalDistanceNoOptimized;
 
 // Save the total distance of no optimized errand to calculate the difference with the optimised one
 var totalDurationNoOptimized;
- 
- var dataResult;
+
+
 /******************************  End of variables declaration  ******************************/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,89 +39,47 @@ var totalDurationNoOptimized;
 /******************************  Mock datas  ******************************/
 
 /*
-    Containers' mock datas
-*/
+ Containers' mock datas
+ */
 /*
-containers = [{
-    'idContainer': 1234,
-    'name' : 'container 1',
-    'address': 'Palais Royal Paris',
-    'lat' : 48.858859,
-    'lng' : 2.347000,
-    'state': 1,
-    'lastCollect' : '2015-06-30 10:30:00',
-    'Errand_idErrand' : 1
-}, {
-    'idContainer': 1235,
-    'name' : 'container 2',
-    'address': 'Grenelle Paris',
-    'lat' : 48.858859,
-    'lng' : 2.347000,
-    'state': 1,
-    'lastCollect' : '2015-06-29 09:30:00',
-    'Errand_idErrand' : 1
-}, {
-    'idContainer': 1236,
-    'name' : 'container 3',
-    'address': 'Le marais Paris',
-    'lat' : 48.858859,
-    'lng' : 2.347000,
-    'state': 0,
-    'lastCollect' : '2015-06-28 08:30:00',
-    'Errand_idErrand' : 1
-}, {
-    'idContainer': 1237,
-    'name' : 'container 4',
-    'address': 'Val-de-grace Paris',
-    'lat' : 48.858859,
-    'lng' : 2.347000,
-    'state': 0,
-    'lastCollect' : '2015-06-27 07:30:00',
-    'Errand_idErrand' : 2
-}];
-*/
-
-   
-function initializeContainers(url) {
-  //   var invocation = new XMLHttpRequest();
-
-  // if(invocation) {    
-  //   invocation.open('GET', url, true);
-  //   invocation.onreadystatechange = function() {
-  //           console.log(invocation.responseText);
-  //   }
-
-  //   invocation.send(); 
-  // }
-
-  function success_callback(data){
-
-        var result =  JSON.parse(data.split("<!--")[0]);
-        containers = result['container'];
-        console.log("array : ", JSON.stringify(containers));
-
-        initializeContainersSelection();
-        initializeMap();
-
-
-}
-
-function error_callback(){
-    alert('pas ok');
-}
-
-
-  jQuery.ajax({
-        type: "GET",
-        url: "http://inovea.herobo.com/webhost/container.php?tag=getAll",
-        dataType:"text",
-        success: success_callback,
-        error: error_callback
-    });
-}
-
-
-initializeContainers();
+ containers = [{
+ 'idContainer': 1234,
+ 'name' : 'container 1',
+ 'address': 'Palais Royal Paris',
+ 'lat' : 48.858859,
+ 'lng' : 2.347000,
+ 'state': 1,
+ 'lastCollect' : '2015-06-30 10:30:00',
+ 'Errand_idErrand' : 1
+ }, {
+ 'idContainer': 1235,
+ 'name' : 'container 2',
+ 'address': 'Grenelle Paris',
+ 'lat' : 48.858859,
+ 'lng' : 2.347000,
+ 'state': 1,
+ 'lastCollect' : '2015-06-29 09:30:00',
+ 'Errand_idErrand' : 1
+ }, {
+ 'idContainer': 1236,
+ 'name' : 'container 3',
+ 'address': 'Le marais Paris',
+ 'lat' : 48.858859,
+ 'lng' : 2.347000,
+ 'state': 0,
+ 'lastCollect' : '2015-06-28 08:30:00',
+ 'Errand_idErrand' : 1
+ }, {
+ 'idContainer': 1237,
+ 'name' : 'container 4',
+ 'address': 'Val-de-grace Paris',
+ 'lat' : 48.858859,
+ 'lng' : 2.347000,
+ 'state': 0,
+ 'lastCollect' : '2015-06-27 07:30:00',
+ 'Errand_idErrand' : 2
+ }];
+ */
 
 
 
@@ -131,15 +92,91 @@ initializeContainers();
 
 
 /*
-    Function to intialize container with state 'unselected'
-*/
+ Function to intialize couriers list with database datas
+ */
+function initializeCouriers() {
 
-function initializeContainersSelection(){
+    var courierList = document.getElementById("courierList");
 
-    for(var i=0; i<containers.length; i++){
+    function success_callback(data) {
+
+        var result = JSON.parse(data.split("<!--")[0]);
+        couriers = result['user'];
+        console.log("couriers : ", JSON.stringify(couriers));
+
+        for (var i = 0; i < couriers.length; i++) {
+            var option = document.createElement('option');
+            option.setAttribute("value", couriers[i].idCourier);
+            option.appendChild(document.createTextNode(couriers[i].name.toUpperCase() + " " + couriers[i].firstname));
+            courierList.appendChild(option);
+        }
+
+
+        initializeContainersSelection();
+        initializeMap();
+
+    }
+
+    function error_callback() {
+        alert('Impossible de récupérer la liste des coursiers.');
+    }
+
+
+    jQuery.ajax({
+        type: "GET",
+        url: "http://inovea.herobo.com/webhost/courier.php?tag=getAll",
+        dataType: "text",
+        success: success_callback,
+        error: error_callback
+    });
+
+}
+
+
+/*
+ Function to initialize containers list with database datas
+ */
+function initializeContainers() {
+
+    // On success
+    function success_callback(data) {
+
+        var result = JSON.parse(data.split("<!--")[0]);
+        containers = result['container'];
+        console.log("containers : ", JSON.stringify(containers));
+
+        initializeCouriers();
+
+    }
+
+    //On error
+    function error_callback() {
+        alert('Impossible de récupérer la liste des conteneurs.');
+    }
+
+    //Ajax request
+    jQuery.ajax({
+        type: "GET",
+        url: "http://inovea.herobo.com/webhost/container.php?tag=getAll",
+        dataType: "text",
+        success: success_callback,
+        error: error_callback
+    });
+}
+
+
+/*
+ Function to intialize container with state 'unselected'
+ */
+
+function initializeContainersSelection() {
+
+    for (var i = 0; i < containers.length; i++) {
         containers[i].isSelected = false;
     }
 }
+
+
 /* 
  Function to create and initialize the map
  */
@@ -153,7 +190,6 @@ function initializeMap() {
 
     map = new google.maps.Map(document.getElementById('map_canvas'),
         mapOptions);
-
 
     for (container in containers) {
         placeMarker(containers[container]);
@@ -172,13 +208,13 @@ var placeMarker = function (container) {
         url: 'empty_container_marker.png'
     };
 
-    if (container.state == false){
-        if(container.Errand_idErrand != 1)
-             image.url = 'busy_full_container_marker2.png'
-         else  
+    if (container.state == false) {
+        if (container.Errand_idErrand != 1)
+            image.url = 'busy_full_container_marker2.png'
+        else
             image.url = 'full_container_marker.png'
     }
-       
+
 
     geocoder.geocode({'address': container.address}, function (results, status) {
         if (status == google.maps.GeocoderStatus.OK) {
@@ -196,16 +232,16 @@ var placeMarker = function (container) {
 
             newMarker.info.content += "container n&deg;" + container.idContainer + "<br>" + results[0].formatted_address;
 
-            if(container.Errand_idErrand != 1)
+            if (container.Errand_idErrand != 1)
                 newMarker.info.content += "</br><span style=\" color : blue\">Appartient a une course</span>";
             else if (container.state == true)
                 newMarker.info.content += "</br><span style=\" color : green\">Vide</span>";
-            else if (container.state == false){
+            else if (container.state == false) {
                 newMarker.info.content += "</br><span style=\" color : red\">Plein</span>";
             }
-                
 
-            if(container.Errand_idErrand != 1)
+
+            if (container.Errand_idErrand != 1)
                 newMarker.info.content += "</br> <button disabled>Indisponible</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
             else if (container.isSelected == false)
                 newMarker.info.content += "</br> <button id=\"container" + container.idContainer + "\" onclick=\"addToErrand(" + container.idContainer + ")\">Ajouter a la course</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
@@ -225,11 +261,11 @@ var placeMarker = function (container) {
 
 
 };
- 
+
 
 /* 
-    Function to search a place on the map
-*/  
+ Function to search a place on the map
+ */
 function majSearch() {
 
     var address = document.getElementById('searchTxt').value;
@@ -246,8 +282,8 @@ function majSearch() {
 
 
 /*
-    Function to add a container in new errand's list
-*/
+ Function to add a container in new errand's list
+ */
 var addToErrand = function (containerId) {
 
     for (var i = 0; i < containers.length; i++) {
@@ -264,8 +300,8 @@ var addToErrand = function (containerId) {
 
 
 /*
-    Funciton to display new errand's list 
-*/
+ Funciton to display new errand's list 
+ */
 var displayErrand = function () {
 
     document.getElementById('table').innerHTML = "";
@@ -295,8 +331,8 @@ var displayErrand = function () {
 
 
 /*
-    Function to remove a container, whose index is send in parameters, from new errand's list
-*/
+ Function to remove a container, whose index is send in parameters, from new errand's list
+ */
 var removeContainerAtIndex = function (index) {
 
     var containerId = errandContainers[index].idContainer;
@@ -315,8 +351,8 @@ var removeContainerAtIndex = function (index) {
 
 
 /*
-    Function to create an itinerary with multiple places
-*/
+ Function to create an itinerary with multiple places
+ */
 function createItinerary(isOptimized) {
 
     directionsDisplay.setMap(null);
@@ -327,104 +363,100 @@ function createItinerary(isOptimized) {
     //Array of all waypoints of the itinerary, between the start place and the end place
     var waypoints = [];
 
-    if(errandContainers.length>1){
+    if (errandContainers.length > 1) {
 
         var startPlace = errandContainers[0].address;
-        var endPlace = errandContainers[errandContainers.length-1].address;
+        var endPlace = errandContainers[errandContainers.length - 1].address;
 
-        if(errandContainers.length > 2){
-            for(var i = 1; i<errandContainers.length-1; i++)
-            {   
-                waypoints.push({location : errandContainers[i].address, stopover : true});
+        if (errandContainers.length > 2) {
+            for (var i = 1; i < errandContainers.length - 1; i++) {
+                waypoints.push({location: errandContainers[i].address, stopover: true});
             }
         }
 
+        var itinerary = {
+            origin: startPlace,
+            destination: endPlace,
+            travelMode: google.maps.TravelMode.DRIVING,
+            provideRouteAlternatives: true,
+            waypoints: waypoints,
+            optimizeWaypoints: false
+        };
 
-                var itinerary = {
-                    origin: startPlace,
-                    destination: endPlace,
-                    travelMode: google.maps.TravelMode.DRIVING,
-                    provideRouteAlternatives: true,
-                    waypoints : waypoints,
-                    optimizeWaypoints: false
-                };
+        if (isOptimized) {
+            itinerary.optimizeWaypoints = true;
+        }
+
+        directionsService.route(itinerary, function (response, status) {
+            if (status == google.maps.DirectionsStatus.OK) {
 
 
-                if(isOptimized){
-                    itinerary.optimizeWaypoints = true;
+                var array = response.routes[0].legs;
+                var totalDistance = 0;
+                var totalDuration = 0;
+
+                for (var i = 0; i < array.length; i++) {
+                    totalDistance += array[i].distance.value;
+                    totalDuration += array[i].duration.value;
+                    console.log('legs[', i, '] = ', array[i]);
                 }
 
-                directionsService.route(itinerary, function (response, status) {
-                    if (status == google.maps.DirectionsStatus.OK) {
+                console.log(totalDuration);
+                totalDistance /= 1000;
+
+                totalDistance = Math.floor(totalDistance * 10) / 10;
+                var hours = Math.floor(totalDuration / 3600);
+                var minutes = Math.floor((totalDuration % 3600) / 60);
 
 
-                        var array = response.routes[0].legs;
-                        var totalDistance = 0;
-                        var totalDuration = 0;
+                document.getElementById('errandDistance').innerHTML = ""
+                document.getElementById('errandDistance').appendChild(document.createTextNode("Distance : " + totalDistance + " km"));
 
-                        for(var i = 0; i<array.length; i++){
-                            totalDistance += array[i].distance.value;
-                            totalDuration += array[i].duration.value;
-                            console.log( 'legs[', i, '] = ', array[i]);
+                document.getElementById('errandHours').innerHTML = "";
+                document.getElementById('errandHours').appendChild(document.createTextNode("Duree : " + hours + " h "));
+
+                document.getElementById('errandMinutes').innerHTML = "";
+                document.getElementById('errandMinutes').appendChild(document.createTextNode(minutes));
+
+
+                if (!isOptimized) {
+
+                    document.getElementById('errandDistanceDifference').innerHTML = "";
+                    document.getElementById('errandHoursDifference').innerHTML = "";
+                    document.getElementById('errandMinutesDifference').innerHTML = "";
+                    totalDurationNoOptimized = totalDuration;
+                    totalDistanceNoOptimized = totalDistance;
+                }
+
+                else {
+                    var distanceDifference = Math.floor((totalDistanceNoOptimized - totalDistance) * 10) / 10;
+                    var hoursDifference = Math.floor((totalDurationNoOptimized - totalDuration) / 3600);
+                    var minutesDifference = Math.floor(((totalDurationNoOptimized - totalDuration) % 3600) / 60);
+
+
+                    if (distanceDifference > 0 || hoursDifference > 0 || minutesDifference > 0) {
+
+                        document.getElementById('errandDistanceDifference').setAttribute('style', 'color:green');
+                        document.getElementById('errandDistanceDifference').appendChild(document.createTextNode(" -" + distanceDifference + " km"));
+
+                        document.getElementById('errandHoursDifference').setAttribute('style', 'color:green');
+                        document.getElementById('errandHoursDifference').appendChild(document.createTextNode(" -"));
+
+                        if (hoursDifference > 0) {
+                            document.getElementById('errandHoursDifference').appendChild(document.createTextNode(hoursDifference + " h "));
                         }
 
-                        console.log(totalDuration);
-                        totalDistance/=1000;
 
-                        totalDistance = Math.floor(totalDistance*10) / 10;
-                        var hours = Math.floor(totalDuration/3600);
-                        var minutes = Math.floor((totalDuration % 3600) /60);
+                        document.getElementById('errandMinutesDifference').setAttribute('style', 'color:green');
+                        document.getElementById('errandMinutesDifference').appendChild(document.createTextNode(minutesDifference + " min"));
 
-
-                        document.getElementById('errandDistance').innerHTML = ""
-                        document.getElementById('errandDistance').appendChild(document.createTextNode("Distance : " + totalDistance + " km"));
-
-                        document.getElementById('errandHours').innerHTML = "";
-                        document.getElementById('errandHours').appendChild(document.createTextNode("Duree : " + hours + " h "));
-
-                        document.getElementById('errandMinutes').innerHTML = "";
-                        document.getElementById('errandMinutes').appendChild(document.createTextNode(minutes));
-
-
-                        if(!isOptimized){
-
-                            document.getElementById('errandDistanceDifference').innerHTML="";
-                            document.getElementById('errandHoursDifference').innerHTML="";
-                            document.getElementById('errandMinutesDifference').innerHTML="";
-                            totalDurationNoOptimized = totalDuration;
-                            totalDistanceNoOptimized = totalDistance;
-                        }
-
-                        else{
-                            var distanceDifference = Math.floor((totalDistanceNoOptimized-totalDistance)*10) / 10;
-                            var hoursDifference = Math.floor((totalDurationNoOptimized-totalDuration)/3600);
-                            var minutesDifference = Math.floor(((totalDurationNoOptimized-totalDuration) % 3600) /60);
-
-
-
-                            if(distanceDifference > 0 || hoursDifference > 0 || minutesDifference > 0){
-
-                                 document.getElementById('errandDistanceDifference').setAttribute('style', 'color:green');
-                            document.getElementById('errandDistanceDifference').appendChild(document.createTextNode(" -" + distanceDifference + " km"));
-
-                            document.getElementById('errandHoursDifference').setAttribute('style', 'color:green');
-                            document.getElementById('errandHoursDifference').appendChild(document.createTextNode(" -")); 
-
-                            if(hoursDifference > 0){
-                                document.getElementById('errandHoursDifference').appendChild(document.createTextNode(hoursDifference + " h ")); 
-                            }
-                           
-
-                            document.getElementById('errandMinutesDifference').setAttribute('style', 'color:green');
-                            document.getElementById('errandMinutesDifference').appendChild(document.createTextNode(minutesDifference + " min"));
-
-                            }
-                           
-                        }
-
-                        directionsDisplay.setDirections(response);
                     }
-                });
+
+                }
+
+                directionsDisplay.setDirections(response);
+            }
+        });
     }
 
     else
@@ -433,10 +465,15 @@ function createItinerary(isOptimized) {
 }
 
 
-function optimizeItinerary(){
+function optimizeItinerary() {
 
     var checkbox = document.getElementById('optimizeCheckbox');
-    createItinerary(checkbox.checked);  
+    createItinerary(checkbox.checked);
+}
+
+
+function createErrand() {
+    console.log('createErrand called');
 }
 
 /*****************************  End of functions declaration *****************************/
@@ -444,6 +481,8 @@ function optimizeItinerary(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
-    Initilization 
-*/
+ Launch initilization 
+ */
+
+initializeContainers();
 

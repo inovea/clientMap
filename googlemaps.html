@@ -43,15 +43,11 @@
 
                 <div><INPUT id="optimizeCheckbox" onclick="optimizeItinerary()" type="checkbox" name="choix1" value="1"> Optimiser</div><br>
                 <span>Attribuer la course &agrave;</span>
-                <select>
-                    <option>Jean</option>
-                    <option>Robert</option>
-                    <option>Maxime</option>
-                    <option>Julien</option>
-
+                <select id="courierList">
                 </select> 
-                <div class="createButton"></div>
-                <button>Cr&eacute;er la course</button>
+                <div class="createButton">
+                <button onclick="createErrand()">Cr&eacute;er la course</button>
+                </div>
             </div>
         </td>
     </tr>
