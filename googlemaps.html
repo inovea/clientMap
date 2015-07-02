@@ -20,7 +20,17 @@
     <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
     <script type="text/javascript" src="bower_components/jquery/dist/jquery.min.js"></script>
     <script type="text/javascript" src="googlemaps.js"></script>
+    <script type="text/javascript" src="bower_components/pickadate/lib/picker.js"></script>
+    <script type="text/javascript" src="bower_components/pickadate/lib/picker.date.js"></script>
+    <script type="text/javascript" src="bower_components/pickadate/lib/picker.time.js"></script>
+    <script type="text/javascript" src="bower_components/pickadate/lib/translations/fr_FR.js"></script>
+
+
     <link href="style.css" rel="stylesheet">
+    <link href="bower_components/pickadate/lib/themes/default.css" rel="stylesheet">
+    <link href="bower_components/pickadate/lib/themes/default.date.css" rel="stylesheet">
+    <link href="bower_components/pickadate/lib/themes/default.time.css" rel="stylesheet">
+
 
 </head>
 <body>
@@ -40,7 +50,17 @@
             <div>
                 <div><span id="errandDistance"></span><span id="errandDistanceDifference"></span></div>
                 <div><span id="errandHours"></span><span id="errandMinutes"></span> <span id="errandHoursDifference"></span><span id="errandMinutesDifference"></span></div>
+                <br>
 
+
+                <div>
+                    Date : <input class="datepicker" onclick="pickerDate()" type="text"></input>
+                </div>
+                <br>
+                <div>
+                    Heure : <input class="timepicker" onclick="pickerTime()" type="text"></input>
+                </div>
+                <br>
                 <div><INPUT id="optimizeCheckbox" onclick="optimizeItinerary()" type="checkbox" name="choix1" value="1"> Optimiser</div><br>
                 <span>Attribuer la course &agrave;</span>
                 <select id="courierList">

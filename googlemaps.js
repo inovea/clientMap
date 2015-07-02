@@ -32,6 +32,8 @@ var totalDistanceNoOptimized;
 var totalDurationNoOptimized;
 
 
+var pickerdate;
+var pickertime;
 /******************************  End of variables declaration  ******************************/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,7 +232,7 @@ var placeMarker = function (container) {
             });
 
 
-            newMarker.info.content += "container n&deg;" + container.idContainer + "<br>" + results[0].formatted_address;
+            newMarker.info.content += "Conteneur n&deg;" + container.idContainer + "<br>" + results[0].formatted_address;
 
             if (container.Errand_idErrand != 1)
                 newMarker.info.content += "</br><span style=\" color : blue\">Appartient a une course</span>";
@@ -317,7 +319,7 @@ var displayErrand = function () {
         img.setAttribute("src", "trash.png");
         img.setAttribute("class", "trash-icon");
         img.setAttribute("onclick", "removeContainerAtIndex(" + i + ")");
-        td1.appendChild(document.createTextNode(errandContainers[i].address));
+        td1.appendChild(document.createTextNode("Conteneur "+errandContainers[i].idContainer));
         td1.setAttribute("style", "width:90%; color:white");
         td2.appendChild(img);
         tr.setAttribute("style", "width:100%");
@@ -473,7 +475,45 @@ function optimizeItinerary() {
 
 
 function createErrand() {
-    console.log('createErrand called');
+
+if(pickertime && pickerdate){
+    var hours = pickertime.component.item.select.hour;
+    var minutes = pickertime.component.item.select.mins;
+    var date = pickerdate.component.item.select.date;
+    var month = pickerdate.component.item.select.month;
+    var year = pickerdate.component.item.select.year;
+
+    
+    console.log("heure : ",hours, "h", minutes);
+    console.log("date : ", date, "-", month, "-", year);
+}
+    else
+        alert('Veuillez selectionner une date et une heure.');
+
+    
+}
+
+
+
+function pickerDate(){
+    var $input = $('.datepicker').pickadate()
+    pickerdate = $input.pickadate('picker');
+    pickerdate.open();
+}
+
+function pickerTime(){
+       var $input =  $('.timepicker').pickatime({
+      // Escape any “rule” characters with an exclamation mark (!).
+      format: 'H!hi',
+      formatLabel: '<b>H</b>!h i',
+      formatSubmit: 'HH:i',
+      hiddenPrefix: 'prefix__',
+      hiddenSuffix: '__suffix'
+    });
+
+   pickertime = $input.pickatime('picker');
+   pickertime.open();
+
 }
 
 /*****************************  End of functions declaration *****************************/
