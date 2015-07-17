@@ -24,12 +24,18 @@
     <script type="text/javascript" src="bower_components/pickadate/lib/picker.date.js"></script>
     <script type="text/javascript" src="bower_components/pickadate/lib/picker.time.js"></script>
     <script type="text/javascript" src="bower_components/pickadate/lib/translations/fr_FR.js"></script>
+        <script type="text/javascript" src="spin.min.js"></script>
+        <script src="overlay/dist/overlay.js"></script>
+
+
 
 
     <link href="style.css" rel="stylesheet">
     <link href="bower_components/pickadate/lib/themes/default.css" rel="stylesheet">
     <link href="bower_components/pickadate/lib/themes/default.date.css" rel="stylesheet">
     <link href="bower_components/pickadate/lib/themes/default.time.css" rel="stylesheet">
+    <link rel="stylesheet" href="overlay/dist/overlay.css">
+
 
 
 </head>
@@ -37,22 +43,32 @@
 <input type="text" id="searchTxt" placeholder="Pays, ville, rue, cp..."></input>
 <button onclick="majSearch()">Rechercher</button>
 <table style="border:solid black 1px; width:100%; height:100%">
+    <div class="overlay">
+  <div class="modal"><div id="foo"></div>
+    <h1>Chargement de la carte ...</h1>
+  </div>
+</div>
+
     <tr>
         <td style="width:75%">
-            <div id="map_canvas" style="width:100%; height:100%"></div>
+
+            <div id="map_canvas" style="width:100%; height:100%">
+            </div>
         </td>
-        <td class="containersList"  >
+        <td class="containersList">
             <div class="containersListContent">
                 <h1>Liste de conteneurs</h1>
                 <br><br>
                 <div id="table"></div>
             </div>
             <div>
-                <div><span id="errandDistance"></span><span id="errandDistanceDifference"></span></div>
-                <div><span id="errandHours"></span><span id="errandMinutes"></span> <span id="errandHoursDifference"></span><span id="errandMinutesDifference"></span></div>
+                <div>
+                    <span id="errandDistance"></span><span id="errandDistanceDifference"></span>
+                </div>
+                <div>
+                    <span id="errandHours"></span><span id="errandMinutes"></span> <span id="errandHoursDifference"></span><span id="errandMinutesDifference"></span>
+                </div>
                 <br>
-
-
                 <div>
                     Date : <input class="datepicker" onclick="pickerDate()" type="text"></input>
                 </div>
@@ -61,16 +77,24 @@
                     Heure : <input class="timepicker" onclick="pickerTime()" type="text"></input>
                 </div>
                 <br>
-                <div><INPUT id="optimizeCheckbox" onclick="optimizeItinerary()" type="checkbox" name="choix1" value="1"> Optimiser</div><br>
+                <div>
+                    <INPUT id="optimizeCheckbox" onclick="optimizeItinerary()" type="checkbox" name="choix1" value="1"> Optimiser les points interm&eacute;diaires
+                </div>
+                <br>
                 <span>Attribuer la course &agrave;</span>
-                <select id="courierList">
-                </select> 
+                <select id="courierList"></select> 
                 <div class="createButton">
-                <button onclick="createErrand()">Cr&eacute;er la course</button>
+                    <button onclick="createErrand()">Cr&eacute;er la course</button>
                 </div>
             </div>
         </td>
     </tr>
 </table>
 </body>
-</html>
+</html> 
+
+
+<script type="text/javascript">
+$(document).ready(function() {
+  $('.overlay').overlay();
+});</script>

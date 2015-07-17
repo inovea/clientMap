@@ -13,8 +13,8 @@ var directionsDisplay = new google.maps.DirectionsRenderer();
 // New errand containers array
 var errandContainers = [];
 
-// Markers array
-var markers = new Array();
+// Markers object   
+var markers ={};
 
 // All containers array
 var containers = [];
@@ -34,6 +34,38 @@ var totalDurationNoOptimized;
 
 var pickerdate;
 var pickertime;
+
+var errandResult;
+
+var optimizedErrandContainers = [];
+var waypoint_order=[];
+
+var wayppointsContainers = [];
+
+var spinnerTarget;
+var overlay = $('.overlay');
+var spinnerOptions = {
+  lines: 13 // The number of lines to draw
+, length: 30 // The length of each line
+, width: 6 // The line thickness
+, radius: 20 // The radius of the inner circle
+, scale: 1.5 // Scales overall size of the spinner
+, corners: 1 // Corner roundness (0..1)
+, color: '#000' // #rgb or #rrggbb or array of colors
+, opacity: 0.25 // Opacity of the lines
+, rotate: 0 // The rotation offset
+, direction: 1 // 1: clockwise, -1: counterclockwise
+, speed: 1.6 // Rounds per second
+, trail: 49 // Afterglow percentage
+, fps: 20 // Frames per second when using setTimeout() as a fallback for CSS
+, zIndex: 2e9 // The z-index (defaults to 2000000000)
+, className: 'spinner' // The CSS class to assign to the spinner
+, top: '51%' // Top position relative to parent
+, left: '50%' // Left position relative to parent
+, shadow: false // Whether to render a shadow
+, hwaccel: false // Whether to use hardware acceleration
+, position: 'absolute' // Element positioning
+};
 /******************************  End of variables declaration  ******************************/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,6 +129,7 @@ var pickertime;
  Function to intialize couriers list with database datas
  */
 function initializeCouriers() {
+console.log('initializeCouriers called');
 
     var courierList = document.getElementById("courierList");
 
@@ -120,7 +153,7 @@ function initializeCouriers() {
     }
 
     function error_callback() {
-        alert('Impossible de récupérer la liste des coursiers.');
+        alert('Impossible de recuperer la liste des coursiers.');
     }
 
 
@@ -139,6 +172,7 @@ function initializeCouriers() {
  Function to initialize containers list with database datas
  */
 function initializeContainers() {
+console.log('initializeContainers called');
 
     // On success
     function success_callback(data) {
@@ -153,7 +187,7 @@ function initializeContainers() {
 
     //On error
     function error_callback() {
-        alert('Impossible de récupérer la liste des conteneurs.');
+        alert('Impossible de recuperer la liste des conteneurs.');
     }
 
     //Ajax request
@@ -173,6 +207,7 @@ function initializeContainers() {
 
 function initializeContainersSelection() {
 
+console.log('initializeContainersSelection called');
     for (var i = 0; i < containers.length; i++) {
         containers[i].isSelected = false;
     }
@@ -184,8 +219,9 @@ function initializeContainersSelection() {
  */
 function initializeMap() {
 
+    console.log('initializeMap called');
     var mapOptions = {
-        zoom: 13,
+        zoom: 10,
         center: new google.maps.LatLng(48.858859, 2.3470599),
         mapTypeId: google.maps.MapTypeId.ROADMAP
     };
@@ -193,11 +229,21 @@ function initializeMap() {
     map = new google.maps.Map(document.getElementById('map_canvas'),
         mapOptions);
 
+    startSpinner();
     for (container in containers) {
-        placeMarker(containers[container]);
+            goPlaceMarker(container, containers[container]);   
+            
     }
 
-    createItinerary();
+}
+function goPlaceMarker(i, container) {
+  setTimeout(function() {
+    placeMarker(container);
+    if(i == containers.length - 1){
+      stopSpinner();
+    }
+                
+  }, i * 400);
 }
 
 
@@ -206,16 +252,21 @@ function initializeMap() {
  */
 var placeMarker = function (container) {
 
+console.log('placeMarker called');
+
+
     var image = {
         url: 'empty_container_marker.png'
     };
 
-    if (container.state == false) {
+    if (container.state == true ) {
         if (container.Errand_idErrand != 1)
-            image.url = 'busy_full_container_marker2.png'
+            image.url = 'busy_full_container_marker.png'
         else
             image.url = 'full_container_marker.png'
     }
+    else if(container.Errand_idErrand != 1)
+        image.url = 'busy_empty_container_marker.png'
 
 
     geocoder.geocode({'address': container.address}, function (results, status) {
@@ -235,7 +286,7 @@ var placeMarker = function (container) {
             newMarker.info.content += "Conteneur n&deg;" + container.idContainer + "<br>" + results[0].formatted_address;
 
             if (container.Errand_idErrand != 1)
-                newMarker.info.content += "</br><span style=\" color : blue\">Appartient a une course</span>";
+                newMarker.info.content += "</br><span style=\" color : blue\">Appartient a la course n&deg;"+container.Errand_idErrand+"</span>";
             else if (container.state == true)
                 newMarker.info.content += "</br><span style=\" color : green\">Vide</span>";
             else if (container.state == false) {
@@ -254,14 +305,13 @@ var placeMarker = function (container) {
             google.maps.event.addListener(newMarker, 'click', function () {
                 newMarker.info.open(map, newMarker);
             });
-            markers.push(newMarker);
+            markers[container.idContainer]=(newMarker);
 
         } else {
             alert('Geocode was not successful for the following reason: ' + status);
         }
-    });
-
-
+            
+        })
 };
 
 
@@ -269,6 +319,7 @@ var placeMarker = function (container) {
  Function to search a place on the map
  */
 function majSearch() {
+console.log('majSearch called');
 
     var address = document.getElementById('searchTxt').value;
 
@@ -287,17 +338,30 @@ function majSearch() {
  Function to add a container in new errand's list
  */
 var addToErrand = function (containerId) {
+console.log('addToErrand called');
 
     for (var i = 0; i < containers.length; i++) {
         if (containers[i].idContainer == containerId) {
             errandContainers.push(containers[i]);
             containers[i].isSelected = true;
+            markers[containers[i].idContainer].info.close();
+            markers[containers[i].idContainer].setMap(null);
+            delete markers[containers[i].idContainer];
+            placeMarker(containers[i]);
             i = containers.length;
         }
     }
 
-    displayErrand();
-    initializeMap();
+ var checkbox = document.getElementById('optimizeCheckbox');
+    checkbox.checked = false;
+    isOptimized = false;
+
+   
+
+    createItinerary();
+    //initializeMap();
+   
+
 };
 
 
@@ -306,11 +370,18 @@ var addToErrand = function (containerId) {
  */
 var displayErrand = function () {
 
+    var containers = errandContainers;
+
+    if(isOptimized){
+        containers = optimizedErrandContainers;
+    }
+    console.log("displayed containers are : " + JSON.stringify(errandContainers));
+
     document.getElementById('table').innerHTML = "";
 
     var theTable = document.createElement('table');
 
-    for (var i = 0, tr, td; i < errandContainers.length; i++) {
+    for (var i = 0, tr, td; i < containers.length; i++) {
         tr = document.createElement('tr');
         td1 = document.createElement('td');
         td2 = document.createElement('td');
@@ -319,7 +390,7 @@ var displayErrand = function () {
         img.setAttribute("src", "trash.png");
         img.setAttribute("class", "trash-icon");
         img.setAttribute("onclick", "removeContainerAtIndex(" + i + ")");
-        td1.appendChild(document.createTextNode("Conteneur "+errandContainers[i].idContainer));
+        td1.appendChild(document.createTextNode("Conteneur "+containers[i].idContainer));
         td1.setAttribute("style", "width:90%; color:white");
         td2.appendChild(img);
         tr.setAttribute("style", "width:100%");
@@ -337,6 +408,8 @@ var displayErrand = function () {
  */
 var removeContainerAtIndex = function (index) {
 
+    console.log('removeContainerAtIndex called');
+
     var containerId = errandContainers[index].idContainer;
 
     errandContainers.splice(index, 1);
@@ -344,10 +417,22 @@ var removeContainerAtIndex = function (index) {
     for (var i = 0; i < containers.length; i++) {
         if (containers[i].idContainer == containerId) {
             containers[i].isSelected = false;
-        }
+            markers[containers[i].idContainer].info.close();
+            markers[containers[i].idContainer].setMap(null);
+            delete markers[containers[i].idContainer];
+            placeMarker(containers[i]);
+            i = containers.length;
+        }                       
     }
-    displayErrand();
-    initializeMap();
+
+    var checkbox = document.getElementById('optimizeCheckbox');
+    checkbox.checked = false;
+    isOptimized = false;
+
+
+    
+    createItinerary();
+   // initializeMap();
 
 }
 
@@ -355,7 +440,9 @@ var removeContainerAtIndex = function (index) {
 /*
  Function to create an itinerary with multiple places
  */
-function createItinerary(isOptimized) {
+function createItinerary() {
+    
+    console.log('createItinerary called');
 
     directionsDisplay.setMap(null);
     directionsDisplay.setMap(map);
@@ -364,15 +451,21 @@ function createItinerary(isOptimized) {
 
     //Array of all waypoints of the itinerary, between the start place and the end place
     var waypoints = [];
+    var wayppointsContainers = [];
 
     if (errandContainers.length > 1) {
-
+        startSpinner();
         var startPlace = errandContainers[0].address;
         var endPlace = errandContainers[errandContainers.length - 1].address;
+
+
 
         if (errandContainers.length > 2) {
             for (var i = 1; i < errandContainers.length - 1; i++) {
                 waypoints.push({location: errandContainers[i].address, stopover: true});
+                if(!isOptimized)
+                    old_waypoint_order = waypoints;
+                wayppointsContainers.push(errandContainers[i]);
             }
         }
 
@@ -389,10 +482,30 @@ function createItinerary(isOptimized) {
             itinerary.optimizeWaypoints = true;
         }
 
-        directionsService.route(itinerary, function (response, status) {
+        var promise = new Promise(function(resolve, reject){
+
+
+            directionsService.route(itinerary, function (response, status) {
+
+
+
             if (status == google.maps.DirectionsStatus.OK) {
 
 
+                if(isOptimized && waypoint_order != response.routes[0].waypoint_order){
+                    waypoint_order = response.routes[0].waypoint_order;
+                    optimizedErrandContainers[0] = errandContainers[0];
+                     for (var i = 1; i < errandContainers.length - 1; i++) {
+                        optimizedErrandContainers[i]= wayppointsContainers[waypoint_order[i-1]];
+                    }
+
+                    optimizedErrandContainers[errandContainers.length-1] = errandContainers[errandContainers.length-1];
+
+                    console.log("sorted containers : ", JSON.stringify(errandContainers));
+                }
+                   
+
+                 stopSpinner();
                 var array = response.routes[0].legs;
                 var totalDistance = 0;
                 var totalDuration = 0;
@@ -438,6 +551,7 @@ function createItinerary(isOptimized) {
 
                     if (distanceDifference > 0 || hoursDifference > 0 || minutesDifference > 0) {
 
+
                         document.getElementById('errandDistanceDifference').setAttribute('style', 'color:green');
                         document.getElementById('errandDistanceDifference').appendChild(document.createTextNode(" -" + distanceDifference + " km"));
 
@@ -453,39 +567,64 @@ function createItinerary(isOptimized) {
                         document.getElementById('errandMinutesDifference').appendChild(document.createTextNode(minutesDifference + " min"));
 
                     }
+                    else
+                         alert('Le placement des points interm\351diaires est d\351ja optimis\351.');
 
                 }
 
                 directionsDisplay.setDirections(response);
+                resolve();
             }
+
+            console.log(JSON.stringify(response.routes[0].waypoint_order));
         });
+    });
+
+    promise.then(function(){
+        displayErrand();
+    })
+
+
+
     }
 
-    else
+    else{
+        directionsDisplay.setMap(null);
         console.log('no itinerary !');
-
+    }
+    
 }
 
 
 function optimizeItinerary() {
+    console.log('optimizeItinerary called');
 
     var checkbox = document.getElementById('optimizeCheckbox');
-    createItinerary(checkbox.checked);
+    isOptimized = checkbox.checked;
+    createItinerary();
 }
 
 
 function createErrand() {
+    console.log('createErrand called');
 
-if(pickertime && pickerdate){
+if(errandContainers.length == 0)
+    alert("Veuillez selectionner au moins 1 conteneur.");
+
+else if(pickertime && pickerdate && pickertime.component.item.select != null && pickerdate.component.item.select != null){
     var hours = pickertime.component.item.select.hour;
     var minutes = pickertime.component.item.select.mins;
     var date = pickerdate.component.item.select.date;
     var month = pickerdate.component.item.select.month;
     var year = pickerdate.component.item.select.year;
 
-    
     console.log("heure : ",hours, "h", minutes);
     console.log("date : ", date, "-", month, "-", year);
+
+
+
+    //   create the errand 
+    // then setContainersErrandId();
 }
     else
         alert('Veuillez selectionner une date et une heure.');
@@ -494,19 +633,74 @@ if(pickertime && pickerdate){
 }
 
 
+/*
+    Function to associate all errand containers to the errand ID 
+*/
+function setContainersErrandId(){
 
+    console.log("setContainersErrandId called");
+var finalContainers = errandContainers;
+
+    if(isOptimized)
+        finalContainers = optimizedErrandContainers;
+
+
+        // On success
+    function success_callback(data) {
+
+        var result = JSON.parse(data.split("<!--")[0]);
+        containers = result['container'];
+        console.log("container result : ", JSON.stringify(containers));
+
+        initializeCouriers();
+    }
+
+    //On error
+    function error_callback() {
+        alert('MAJ impossible');
+    }
+
+    
+    for (var i = 0; i < finalContainers.length; i++){
+
+        var currentCont = finalContainers[i];
+        //Ajax request
+        jQuery.ajax({
+            type: "GET",
+            url: "http://inovea.herobo.com/webhost/container.php?tag=update&idContainer="+currentCont.idContainer+"&name="+ currentCont.name+"&lat="+currentCont.lat+"&lng="+currentCont.lng+"&state="+currentCont.state+"&lastCollect="+currentCont.lastCollect+"&address="+currentCont.address+"& idErrand=555"    ,
+            dataType: "text",
+            success: success_callback,
+            error: error_callback
+        });
+
+    }
+}
+
+
+
+/*
+    Function to open the datepicker
+*/
 function pickerDate(){
+
+        console.log('pickerDate called');
+
     var $input = $('.datepicker').pickadate()
     pickerdate = $input.pickadate('picker');
     pickerdate.open();
 }
 
+/*
+    Function to open the timepicker
+*/
 function pickerTime(){
+            console.log('pickerTime called');
+
        var $input =  $('.timepicker').pickatime({
       // Escape any “rule” characters with an exclamation mark (!).
       format: 'H!hi',
       formatLabel: '<b>H</b>!h i',
-      formatSubmit: 'HH:i',
+      formatSubmit: 'H:i',
       hiddenPrefix: 'prefix__',
       hiddenSuffix: '__suffix'
     });
@@ -514,6 +708,26 @@ function pickerTime(){
    pickertime = $input.pickatime('picker');
    pickertime.open();
 
+}
+
+function startSpinner(){
+    console.log("startSpinner called");
+    spinnerTarget = document.getElementById('foo');
+    var spinner = new Spinner(spinnerOptions).spin(spinnerTarget);
+
+    
+overlay.css('visibility', 'visible');
+        overlay.addClass('shown');
+
+
+}
+
+function stopSpinner(){
+        console.log("stopSpinner called");
+ spinnerTarget = document.getElementById('foo');
+    spinnerTarget.innerHTML="";
+    overlay.css('visibility', 'hidden');
+    overlay.removeClass('shown');  
 }
 
 /*****************************  End of functions declaration *****************************/
