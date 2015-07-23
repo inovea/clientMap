@@ -22,6 +22,12 @@ var containers = [];
 //All couriers array
 var couriers = [];
 
+//Errand Distance
+var totalDistance = 0;
+
+//Errand Duration
+var totalDuration = 0;
+
 //Errand optimized or not
 var isOptimized = false;
 
@@ -117,7 +123,7 @@ var spinnerOptions = {
 
 
 
-/******************************  End of Mock datas  ******************************/
+ /******************************  End of Mock datas  ******************************/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -128,8 +134,8 @@ var spinnerOptions = {
 /*
  Function to intialize couriers list with database datas
  */
-function initializeCouriers() {
-console.log('initializeCouriers called');
+ function initializeCouriers() {
+    console.log('initializeCouriers called');
 
     var courierList = document.getElementById("courierList");
 
@@ -171,8 +177,8 @@ console.log('initializeCouriers called');
 /*
  Function to initialize containers list with database datas
  */
-function initializeContainers() {
-console.log('initializeContainers called');
+ function initializeContainers() {
+    console.log('initializeContainers called');
 
     // On success
     function success_callback(data) {
@@ -205,9 +211,9 @@ console.log('initializeContainers called');
  Function to intialize container with state 'unselected'
  */
 
-function initializeContainersSelection() {
+ function initializeContainersSelection() {
 
-console.log('initializeContainersSelection called');
+    console.log('initializeContainersSelection called');
     for (var i = 0; i < containers.length; i++) {
         containers[i].isSelected = false;
     }
@@ -217,7 +223,7 @@ console.log('initializeContainersSelection called');
 /* 
  Function to create and initialize the map
  */
-function initializeMap() {
+ function initializeMap() {
 
     console.log('initializeMap called');
     var mapOptions = {
@@ -231,8 +237,8 @@ function initializeMap() {
 
     startSpinner();
     for (container in containers) {
-            goPlaceMarker(container, containers[container]);   
-            
+        goPlaceMarker(container, containers[container]);   
+        
     }
 
 }
@@ -241,85 +247,95 @@ function goPlaceMarker(i, container) {
     placeMarker(container);
     if(i == containers.length - 1){
       stopSpinner();
-    }
-                
-  }, i * 400);
+  }
+  
+}, i * 500);
 }
 
 
 /* 
  Function to add a marker on map corresponding to the container send in parameters
  */
-var placeMarker = function (container) {
+ var placeMarker = function (container) {
 
-console.log('placeMarker called');
+    console.log('placeMarker called');
 
 
     var image = {
         url: 'empty_container_marker.png'
     };
 
-    if (container.state == true ) {
+    if (container.state == 1 ) {
         if (container.Errand_idErrand != 1)
             image.url = 'busy_full_container_marker.png'
         else
             image.url = 'full_container_marker.png'
     }
-    else if(container.Errand_idErrand != 1)
-        image.url = 'busy_empty_container_marker.png'
+
+    else if(container.state == 2)
+    {
+       if (container.Errand_idErrand != 1)
+        image.url = 'busy_alert_container_marker.png'
+    else
+        image.url = 'alert_container_marker.png'
+}
+else if(container.Errand_idErrand != 1)
+    image.url = 'busy_empty_container_marker.png'
 
 
-    geocoder.geocode({'address': container.address}, function (results, status) {
-        if (status == google.maps.GeocoderStatus.OK) {
+geocoder.geocode({'address': container.address}, function (results, status) {
+    if (status == google.maps.GeocoderStatus.OK) {
 
-            var newMarker = new google.maps.Marker({
-                map: map,
-                position: results[0].geometry.location,
-                clickable: true,
-                icon: image
-            });
-            newMarker.info = new google.maps.InfoWindow({
-                content: ""
-            });
-
-
-            newMarker.info.content += "Conteneur n&deg;" + container.idContainer + "<br>" + results[0].formatted_address;
-
-            if (container.Errand_idErrand != 1)
-                newMarker.info.content += "</br><span style=\" color : blue\">Appartient a la course n&deg;"+container.Errand_idErrand+"</span>";
-            else if (container.state == true)
-                newMarker.info.content += "</br><span style=\" color : green\">Vide</span>";
-            else if (container.state == false) {
-                newMarker.info.content += "</br><span style=\" color : red\">Plein</span>";
-            }
+        var newMarker = new google.maps.Marker({
+            map: map,
+            position: results[0].geometry.location,
+            clickable: true,
+            icon: image
+        });
+        newMarker.info = new google.maps.InfoWindow({
+            content: ""
+        });
 
 
-            if (container.Errand_idErrand != 1)
-                newMarker.info.content += "</br> <button disabled>Indisponible</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
-            else if (container.isSelected == false)
-                newMarker.info.content += "</br> <button id=\"container" + container.idContainer + "\" onclick=\"addToErrand(" + container.idContainer + ")\">Ajouter a la course</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
-            else
-                newMarker.info.content += "</br> <button disabled>Ajout&eacute;</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
+        newMarker.info.content += "Conteneur n&deg;" + container.idContainer + "<br>" + results[0].formatted_address;
+
+        if (container.Errand_idErrand != 1)
+            newMarker.info.content += "</br><span style=\" color : blue\">Appartient a la course n&deg;"+container.Errand_idErrand+"</span>";
+        else if (container.state == 1)
+            newMarker.info.content += "</br><span style=\" color : green\">Plein</span>";
+        else if (container.state == 0) 
+            newMarker.info.content += "</br><span style=\" color : red\">Vide</span>";
+        else if (container.state == 2) 
+            newMarker.info.content += "</br><span style=\" color : orange\">Alerte</span>";
+        
 
 
-            google.maps.event.addListener(newMarker, 'click', function () {
-                newMarker.info.open(map, newMarker);
-            });
-            markers[container.idContainer]=(newMarker);
+        if (container.Errand_idErrand != 1)
+            newMarker.info.content += "</br> <button disabled>Indisponible</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
+        else if (container.isSelected == false)
+            newMarker.info.content += "</br> <button id=\"container" + container.idContainer + "\" onclick=\"addToErrand(" + container.idContainer + ")\">Ajouter a la course</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
+        else
+            newMarker.info.content += "</br> <button disabled>Ajout&eacute;</button><br><br><div style='color:grey; font-size:10px; font-style:italic'>Derniere collecte : " + container.lastCollect + "</div>"
 
-        } else {
-            alert('Geocode was not successful for the following reason: ' + status);
-        }
-            
-        })
+
+        google.maps.event.addListener(newMarker, 'click', function () {
+            newMarker.info.open(map, newMarker);
+        });
+        markers[container.idContainer]=(newMarker);
+
+    } else {
+        console.log('Geocode was not successful for the following reason: ' + status);
+    }
+    
+})
 };
 
 
 /* 
  Function to search a place on the map
  */
-function majSearch() {
-console.log('majSearch called');
+ function majSearch() {
+    console.log('majSearch called');
 
     var address = document.getElementById('searchTxt').value;
 
@@ -337,8 +353,8 @@ console.log('majSearch called');
 /*
  Function to add a container in new errand's list
  */
-var addToErrand = function (containerId) {
-console.log('addToErrand called');
+ var addToErrand = function (containerId) {
+    console.log('addToErrand called');
 
     for (var i = 0; i < containers.length; i++) {
         if (containers[i].idContainer == containerId) {
@@ -352,15 +368,15 @@ console.log('addToErrand called');
         }
     }
 
- var checkbox = document.getElementById('optimizeCheckbox');
+    var checkbox = document.getElementById('optimizeCheckbox');
     checkbox.checked = false;
     isOptimized = false;
 
-   
+    
 
     createItinerary();
     //initializeMap();
-   
+    
 
 };
 
@@ -368,7 +384,7 @@ console.log('addToErrand called');
 /*
  Funciton to display new errand's list 
  */
-var displayErrand = function () {
+ var displayErrand = function () {
 
     var containers = errandContainers;
 
@@ -406,7 +422,7 @@ var displayErrand = function () {
 /*
  Function to remove a container, whose index is send in parameters, from new errand's list
  */
-var removeContainerAtIndex = function (index) {
+ var removeContainerAtIndex = function (index) {
 
     console.log('removeContainerAtIndex called');
 
@@ -440,7 +456,7 @@ var removeContainerAtIndex = function (index) {
 /*
  Function to create an itinerary with multiple places
  */
-function createItinerary() {
+ function createItinerary() {
     
     console.log('createItinerary called');
 
@@ -489,124 +505,125 @@ function createItinerary() {
 
 
 
-            if (status == google.maps.DirectionsStatus.OK) {
+                if (status == google.maps.DirectionsStatus.OK) {
 
 
-                if(isOptimized && waypoint_order != response.routes[0].waypoint_order){
-                    waypoint_order = response.routes[0].waypoint_order;
-                    optimizedErrandContainers[0] = errandContainers[0];
-                     for (var i = 1; i < errandContainers.length - 1; i++) {
-                        optimizedErrandContainers[i]= wayppointsContainers[waypoint_order[i-1]];
-                    }
-
-                    optimizedErrandContainers[errandContainers.length-1] = errandContainers[errandContainers.length-1];
-
-                    console.log("sorted containers : ", JSON.stringify(errandContainers));
-                }
-                   
-
-                 stopSpinner();
-                var array = response.routes[0].legs;
-                var totalDistance = 0;
-                var totalDuration = 0;
-
-                for (var i = 0; i < array.length; i++) {
-                    totalDistance += array[i].distance.value;
-                    totalDuration += array[i].duration.value;
-                    console.log('legs[', i, '] = ', array[i]);
-                }
-
-                console.log(totalDuration);
-                totalDistance /= 1000;
-
-                totalDistance = Math.floor(totalDistance * 10) / 10;
-                var hours = Math.floor(totalDuration / 3600);
-                var minutes = Math.floor((totalDuration % 3600) / 60);
-
-
-                document.getElementById('errandDistance').innerHTML = ""
-                document.getElementById('errandDistance').appendChild(document.createTextNode("Distance : " + totalDistance + " km"));
-
-                document.getElementById('errandHours').innerHTML = "";
-                document.getElementById('errandHours').appendChild(document.createTextNode("Duree : " + hours + " h "));
-
-                document.getElementById('errandMinutes').innerHTML = "";
-                document.getElementById('errandMinutes').appendChild(document.createTextNode(minutes));
-
-
-                if (!isOptimized) {
-
-                    document.getElementById('errandDistanceDifference').innerHTML = "";
-                    document.getElementById('errandHoursDifference').innerHTML = "";
-                    document.getElementById('errandMinutesDifference').innerHTML = "";
-                    totalDurationNoOptimized = totalDuration;
-                    totalDistanceNoOptimized = totalDistance;
-                }
-
-                else {
-                    var distanceDifference = Math.floor((totalDistanceNoOptimized - totalDistance) * 10) / 10;
-                    var hoursDifference = Math.floor((totalDurationNoOptimized - totalDuration) / 3600);
-                    var minutesDifference = Math.floor(((totalDurationNoOptimized - totalDuration) % 3600) / 60);
-
-
-                    if (distanceDifference > 0 || hoursDifference > 0 || minutesDifference > 0) {
-
-
-                        document.getElementById('errandDistanceDifference').setAttribute('style', 'color:green');
-                        document.getElementById('errandDistanceDifference').appendChild(document.createTextNode(" -" + distanceDifference + " km"));
-
-                        document.getElementById('errandHoursDifference').setAttribute('style', 'color:green');
-                        document.getElementById('errandHoursDifference').appendChild(document.createTextNode(" -"));
-
-                        if (hoursDifference > 0) {
-                            document.getElementById('errandHoursDifference').appendChild(document.createTextNode(hoursDifference + " h "));
+                    if(isOptimized && waypoint_order != response.routes[0].waypoint_order){
+                        waypoint_order = response.routes[0].waypoint_order;
+                        optimizedErrandContainers[0] = errandContainers[0];
+                        for (var i = 1; i < errandContainers.length - 1; i++) {
+                            optimizedErrandContainers[i]= wayppointsContainers[waypoint_order[i-1]];
                         }
 
+                        optimizedErrandContainers[errandContainers.length-1] = errandContainers[errandContainers.length-1];
 
-                        document.getElementById('errandMinutesDifference').setAttribute('style', 'color:green');
-                        document.getElementById('errandMinutesDifference').appendChild(document.createTextNode(minutesDifference + " min"));
-
+                        console.log("sorted containers : ", JSON.stringify(errandContainers));
                     }
-                    else
-                         alert('Le placement des points interm\351diaires est d\351ja optimis\351.');
+                    
 
-                }
+                    stopSpinner();
+                    var array = response.routes[0].legs;
+                    totalDistance = 0;
+                    totalDuration = 0;
 
-                directionsDisplay.setDirections(response);
-                resolve();
-            }
+                    for (var i = 0; i < array.length; i++) {
+                        totalDistance += array[i].distance.value;
+                        totalDuration += array[i].duration.value;
+                        console.log('legs[', i, '] = ', array[i]);
+                    }
 
-            console.log(JSON.stringify(response.routes[0].waypoint_order));
-        });
-    });
+                    console.log(totalDuration);
+                    totalDistance /= 1000;
 
-    promise.then(function(){
-        displayErrand();
-    })
-
+                    totalDistance = Math.floor(totalDistance * 10) / 10;
+                    var hours = Math.floor(totalDuration / 3600);
+                    var minutes = Math.floor((totalDuration % 3600) / 60);
 
 
-    }
+                    document.getElementById('errandDistance').innerHTML = ""
+                    document.getElementById('errandDistance').appendChild(document.createTextNode("Distance : " + totalDistance + " km"));
 
-    else{
-        directionsDisplay.setMap(null);
-        console.log('no itinerary !');
-    }
-    
+                    document.getElementById('errandHours').innerHTML = "";
+                    document.getElementById('errandHours').appendChild(document.createTextNode("Duree : " + hours + " h "));
+
+                    document.getElementById('errandMinutes').innerHTML = "";
+                    document.getElementById('errandMinutes').appendChild(document.createTextNode(minutes));
+
+
+                    if (!isOptimized) {
+
+                        document.getElementById('errandDistanceDifference').innerHTML = "";
+                        document.getElementById('errandHoursDifference').innerHTML = "";
+                        document.getElementById('errandMinutesDifference').innerHTML = "";
+                        totalDurationNoOptimized = totalDuration;
+                        totalDistanceNoOptimized = totalDistance;
+                    }
+
+                    else {
+                        var distanceDifference = Math.floor((totalDistanceNoOptimized - totalDistance) * 10) / 10;
+                        var hoursDifference = Math.floor((totalDurationNoOptimized - totalDuration) / 3600);
+                        var minutesDifference = Math.floor(((totalDurationNoOptimized - totalDuration) % 3600) / 60);
+
+
+                        if (distanceDifference > 0 || hoursDifference > 0 || minutesDifference > 0) {
+
+
+                            document.getElementById('errandDistanceDifference').setAttribute('style', 'color:green');
+                            document.getElementById('errandDistanceDifference').appendChild(document.createTextNode(" -" + distanceDifference + " km"));
+
+                            document.getElementById('errandHoursDifference').setAttribute('style', 'color:green');
+                            document.getElementById('errandHoursDifference').appendChild(document.createTextNode(" -"));
+
+                            if (hoursDifference > 0) {
+                                document.getElementById('errandHoursDifference').appendChild(document.createTextNode(hoursDifference + " h "));
+                            }
+
+
+                            document.getElementById('errandMinutesDifference').setAttribute('style', 'color:green');
+                            document.getElementById('errandMinutesDifference').appendChild(document.createTextNode(minutesDifference + " min"));
+
+                        }
+                        else
+                           alert('Le placement des points interm\351diaires est d\351ja optimis\351.');
+
+                   }
+
+                   directionsDisplay.setDirections(response);
+                   resolve();
+               }
+
+               console.log(JSON.stringify(response.routes[0].waypoint_order));
+           });
+});
+
+promise.then(function(){
+    displayErrand();
+})
+
+
+
+}
+
+else{
+directionsDisplay.setMap(null);
+displayErrand();
+console.log('no itinerary !');
+}
+
 }
 
 
 function optimizeItinerary() {
-    console.log('optimizeItinerary called');
+console.log('optimizeItinerary called');
 
-    var checkbox = document.getElementById('optimizeCheckbox');
-    isOptimized = checkbox.checked;
-    createItinerary();
+var checkbox = document.getElementById('optimizeCheckbox');
+isOptimized = checkbox.checked;
+createItinerary();
 }
 
 
 function createErrand() {
-    console.log('createErrand called');
+console.log('createErrand called');
 
 if(errandContainers.length == 0)
     alert("Veuillez selectionner au moins 1 conteneur.");
@@ -621,38 +638,83 @@ else if(pickertime && pickerdate && pickertime.component.item.select != null && 
     console.log("heure : ",hours, "h", minutes);
     console.log("date : ", date, "-", month, "-", year);
 
+    var courierList = document.getElementById("courierList");
+    var idCourrier = courierList.options[courierList.selectedIndex].value;
+
+    console.log("id Courrier -->"+idCourrier);
+
+    var finalDate = year+"-"+month+"-"+date+"T"+hours+":"+minutes+":0";
+    
+    var sendUrl = "http://inovea.herobo.com/webhost/errand.php?tag=create&dateDebut="+finalDate+"&duree="+totalDuration+"&distance="+totalDistance+"&idCourier="+idCourrier;
+
+// On success
+function success_callback(data) {
+    data = data.substr(0, data.indexOf("\r"));
+        //data = data.replace("\\\"", "\"");
+        data = JSON.parse(data);
+        var idErrand = data.errand.idErrand;
+        console.log("La course a ete créée : "+ idErrand);
+        
+        
+        setContainersErrandId(idErrand);
+
+    }
+
+    //On error
+    function error_callback() {
+        alert('Impossible de recuperer la liste des conteneurs.');
+    }
+
+    
+
+    jQuery.ajax({
+        type: "GET",
+        url: sendUrl,
+        dataType: "text",
+        success: success_callback,
+        error: error_callback
+    });
+    
+    
+    
 
 
+
+
+    //Ajax request
+    
+    
     //   create the errand 
     // then setContainersErrandId();
 }
-    else
-        alert('Veuillez selectionner une date et une heure.');
+else
+    alert('Veuillez selectionner une date et une heure.');
 
-    
+
 }
 
 
 /*
     Function to associate all errand containers to the errand ID 
-*/
-function setContainersErrandId(){
+    */
+    function setContainersErrandId(idErrand){
 
-    console.log("setContainersErrandId called");
-var finalContainers = errandContainers;
-
-    if(isOptimized)
-        finalContainers = optimizedErrandContainers;
+        console.log("setContainersErrandId called");
+        var finalContainers = errandContainers;
+        var i = 0;
+        var requestNumber = 0;
+        if(isOptimized)
+            finalContainers = optimizedErrandContainers;
 
 
         // On success
-    function success_callback(data) {
+        function success_callback(data, i, finalContainers) {
 
-        var result = JSON.parse(data.split("<!--")[0]);
-        containers = result['container'];
-        console.log("container result : ", JSON.stringify(containers));
+            var result = JSON.parse(data.split("<!--")[0]);
+            containers = result['container'];
+            console.log("container result : ", JSON.stringify(containers));
 
-        initializeCouriers();
+        // initializeCouriers();
     }
 
     //On error
@@ -660,77 +722,110 @@ var finalContainers = errandContainers;
         alert('MAJ impossible');
     }
 
-    
-    for (var i = 0; i < finalContainers.length; i++){
+    var promise = new Promise(function(resolve, reject) {
 
-        var currentCont = finalContainers[i];
+        for (i = 0; i < finalContainers.length; i++){
+
+            var currentCont = finalContainers[i];
         //Ajax request
-        jQuery.ajax({
+        var request = jQuery.ajax({
             type: "GET",
-            url: "http://inovea.herobo.com/webhost/container.php?tag=update&idContainer="+currentCont.idContainer+"&name="+ currentCont.name+"&lat="+currentCont.lat+"&lng="+currentCont.lng+"&state="+currentCont.state+"&lastCollect="+currentCont.lastCollect+"&address="+currentCont.address+"& idErrand=555"    ,
+            url: "http://inovea.herobo.com/webhost/container.php?tag=update&idContainer="+currentCont.idContainer+"&name="+ currentCont.name+"&lat="+currentCont.lat+"&lng="+currentCont.lng+"&state="+currentCont.state+"&lastCollect="+currentCont.lastCollect+"&address="+currentCont.address+"& idErrand="+idErrand,
             dataType: "text",
-            success: success_callback,
+            success: function (data){
+                success_callback(data, i, finalContainers);
+            }
+            ,
             error: error_callback
         });
 
-    }
-}
 
+        request.done(function () {
+            
+            requestNumber++;
+            setTimeout(function(){
+
+                if(i == requestNumber)
+                    location.reload();
+            }, 500);   
+        });
+
+    }
+
+});
+promise.then(function(){
+    location.reload();
+});
+}
 
 
 /*
     Function to open the datepicker
-*/
-function pickerDate(){
+    */
+    function pickerDate(){
 
         console.log('pickerDate called');
+        var today = new Date();
+        today.setDate(today.getDate() - 1);
 
-    var $input = $('.datepicker').pickadate()
-    pickerdate = $input.pickadate('picker');
-    pickerdate.open();
-}
+        var actualYear = today.getFullYear();
+        var actualMonth = today.getMonth();
+        var actualDay = today.getDate();
+
+
+        var $input = $('.datepicker').pickadate({
+            monthsFull: ['Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre'],
+            monthsShort: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sep', 'Oct', 'Nov', 'Dec'],
+            disable: [
+            { from: [1900,1,1], to: [actualYear, actualMonth, actualDay] }
+            
+            ]
+        });
+        pickerdate = $input.pickadate('picker');
+        pickerdate.open();
+    }
 
 /*
     Function to open the timepicker
-*/
-function pickerTime(){
-            console.log('pickerTime called');
+    */
+    function pickerTime(){
+        console.log('pickerTime called');
 
-       var $input =  $('.timepicker').pickatime({
+        var $input =  $('.timepicker').pickatime({
       // Escape any “rule” characters with an exclamation mark (!).
       format: 'H!hi',
       formatLabel: '<b>H</b>!h i',
       formatSubmit: 'H:i',
       hiddenPrefix: 'prefix__',
       hiddenSuffix: '__suffix'
-    });
+  });
 
-   pickertime = $input.pickatime('picker');
-   pickertime.open();
+        pickertime = $input.pickatime('picker');
+        pickertime.open();
 
-}
+    }
 
-function startSpinner(){
-    console.log("startSpinner called");
-    spinnerTarget = document.getElementById('foo');
-    var spinner = new Spinner(spinnerOptions).spin(spinnerTarget);
+    function startSpinner(){
+        console.log("startSpinner called");
+        spinnerTarget = document.getElementById('foo');
+        var spinner = new Spinner(spinnerOptions).spin(spinnerTarget);
 
-    
-overlay.css('visibility', 'visible');
+        
+        overlay.css('visibility', 'visible');
         overlay.addClass('shown');
 
 
-}
+    }
 
-function stopSpinner(){
+    function stopSpinner(){
         console.log("stopSpinner called");
- spinnerTarget = document.getElementById('foo');
-    spinnerTarget.innerHTML="";
-    overlay.css('visibility', 'hidden');
-    overlay.removeClass('shown');  
-}
+        spinnerTarget = document.getElementById('foo');
+        spinnerTarget.innerHTML="";
+        overlay.css('visibility', 'hidden');
+        overlay.removeClass('shown');  
+    }
 
-/*****************************  End of functions declaration *****************************/
+    /*****************************  End of functions declaration *****************************/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -738,5 +833,5 @@ function stopSpinner(){
  Launch initilization 
  */
 
-initializeContainers();
+ initializeContainers();
 
